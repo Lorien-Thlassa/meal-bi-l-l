@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="今天吃什么">
+    <meta name="theme-color" content="#DCE2F1">
+    <meta name="description" content="像素风三餐记账 · 记录每一餐的详细食物清单 · 支持数据导出备份">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%235b8c5a'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23fef7cf' font-family='monospace'%3E🍚%3C/text%3E%3C/svg%3E">
+    <link rel="manifest" href="data:application/manifest+json,{}" id="manifest-placeholder">
+    <title>今天吃什么 · 像素三餐账本</title>
+    <style>
+        /* 像素风基础重置 & 点阵字体 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #DCE2F1;
+            font-family: 'Courier New', 'Courier', 'IBM Plex Mono', 'VT323', monospace;
+            text-shadow: 0 0 0.5px rgba(0,0,0,0.1);
+            padding: 24px 16px 48px;
+            min-height: 100vh;
+            color: #1e2a2f;
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        /* 标题区像素风 */
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: #1e3a2f;
+            display: inline-block;
+            color: #f9eec1;
+            padding: 8px 20px;
+            border-radius: 0px;
+            box-shadow: 6px 6px 0 #0f2b1f;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            border: 2px solid #2b5e3b;
+        }
+        .sub {
+            font-size: 0.7rem;
+            margin-top: 12px;
+            color: #3f5c4b;
+            background: rgba(255,245,215,0.6);
+            display: inline-block;
+            padding: 4px 12px;
+            letter-spacing: 0.5px;
+        }
+        .install-tip {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2c3e2b;
+            color: #f9eec1;
+            padding: 8px 16px;
+            font-size: 0.7rem;
+            font-family: monospace;
+            border-radius: 0;
+            box-shadow: 4px 4px 0 #0f2b1f;
+            z-index: 100;
+            cursor: pointer;
+            display: none;
+            border: 1px solid #5b8c5a;
+        }
+        @media (max-width: 600px) {
+            .install-tip { font-size: 0.6rem; padding: 6px 12px; }
+        }
+
+        /* 卡片像素风格 */
+        .card {
+            background: #fefae0;
+            border: 3px solid #2c3e2b;
+            box-shadow: 5px 5px 0 #8b9a6e;
+            padding: 18px 20px;
+            margin-bottom: 28px;
+            transition: 0.1s linear;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+        .input-group {
+            flex: 1;
+            min-width: 120px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #4a3b1c;
+            margin-bottom: 4px;
+            border-left: 3px solid #aabb7f;
+            padding-left: 6px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 0.85rem;
+            font-family: 'Courier New', monospace;
+            background: #fffcf0;
+            border: 2px solid #7a8f5c;
+            border-radius: 0px;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: #1e5a3a;
+            background: #fffff0;
+        }
+        button {
+            background: #5b8c5a;
+            border: none;
+            padding: 8px 16px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #fef7cf;
+            cursor: pointer;
+            border-radius: 0px;
+            border: 2px solid #2c4827;
+            box-shadow: 3px 3px 0 #2a4725;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: 0.05s linear;
+        }
+        button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #2a4725;
+        }
+        button.secondary {
+            background: #b68b40;
+            box-shadow: 3px 3px 0 #6e4e28;
+            border-color: #7e5a32;
+        }
+        button.small {
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            box-shadow: 2px 2px 0 #2a4725;
+        }
+        button.danger {
+            background: #b15533;
+            border-color: #703d22;
+            box-shadow: 3px 3px 0 #562f19;
+        }
+        button.export-btn {
+            background: #4f7a5c;
+            border-color: #2d553b;
+        }
+        button.import-btn {
+            background: #6f8f6a;
+            border-color: #456b3e;
+        }
+
+        .meal-items-area {
+            background: #ece3c9;
+            border: 2px dashed #8b9a6e;
+            padding: 12px;
+            margin: 12px 0 16px;
+        }
+        .items-list {
+            margin-bottom: 10px;
+        }
+        .food-item-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .food-item-row input {
+            flex: 2;
+            min-width: 100px;
+        }
+        .food-item-row input.price-input {
+            flex: 1;
+            min-width: 80px;
+        }
+        .total-preview {
+            font-weight: bold;
+            font-size: 1.1rem;
+            background: #2c3e2b;
+            display: inline-block;
+            padding: 4px 12px;
+            color: #ffefb9;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #efe3b0;
+            border: 3px solid #4d683b;
+            padding: 12px;
+            flex: 1;
+            text-align: center;
+            box-shadow: 4px 4px 0 #8b7a54;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .stat-amount {
+            font-size: 1.8rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .bill-group {
+            margin-bottom: 28px;
+        }
+        .group-date {
+            background: #d6cda5;
+            padding: 6px 12px;
+            border-left: 8px solid #5f8148;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .meal-record {
+            background: #fff6e5;
+            border: 2px solid #b7a86e;
+            margin-top: 8px;
+            padding: 12px;
+            cursor: pointer;
+        }
+        .meal-record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .meal-badge {
+            font-weight: bold;
+            background: #6f9e5c;
+            padding: 2px 12px;
+            color: #fff0c0;
+            letter-spacing: 1px;
+        }
+        .meal-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .meal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .details-list {
+            margin-top: 12px;
+            padding-left: 20px;
+            border-top: 1px dashed #bcae78;
+            padding-top: 10px;
+            font-size: 0.8rem;
+            display: none;
+        }
+        .details-list.show {
+            display: block;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dotted #ccbe8e;
+            padding: 4px 0;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6a5a3a;
+            font-size: 0.9rem;
+        }
+        .clear-btn {
+            background: #5f6b47;
+            box-shadow: 2px 2px 0 #3a452a;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-card {
+            background: #f5ebcf;
+            border: 4px solid #3d5a2b;
+            max-width: 500px;
+            width: 90%;
+            padding: 20px;
+            box-shadow: 12px 12px 0 #2e3820;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+            border-left: 8px solid #768948;
+            padding-left: 12px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.6rem;
+            color: #5f6849;
+            margin-top: 32px;
+            border-top: 1px solid #c2bc8a;
+            padding-top: 16px;
+        }
+        @media (max-width: 600px) {
+            .food-item-row { flex-direction: column; align-items: stretch; }
+            .meal-record-header { flex-direction: column; align-items: flex-start; }
+            .stat-amount { font-size: 1.4rem; }
+            .header h1 { font-size: 1.5rem; padding: 6px 16px; }
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #2a2e3a; }
+            .card { background: #2f3126; border-color: #5b6e4a; }
+            .meal-record { background: #3a3c2e; border-color: #6f8254; }
+            .group-date { background: #4a5238; color: #efe3b0; }
+            .stat-card { background: #4a5238; }
+        }
+        /* 隐藏文件输入 */
+        #importFileInput {
+            display: none;
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🍚 今天吃什么</h1>
+        <div class="sub">✧ 像素记账 · 三餐明细 · 可导出备份 ✧</div>
+    </div>
+
+    <div class="card">
+        <div class="form-row">
+            <div class="input-group">
+                <label>📅 日期</label>
+                <input type="date" id="newDate" value="">
+            </div>
+            <div class="input-group">
+                <label>🍽️ 餐别</label>
+                <select id="newMeal">
+                    <option value="breakfast">🍳 早餐</option>
+                    <option value="lunch">🍱 午餐</option>
+                    <option value="dinner">🍜 晚餐</option>
+                </select>
+            </div>
+        </div>
+        <div class="meal-items-area">
+            <div style="font-weight:bold; margin-bottom:8px;">📋 食物清单</div>
+            <div id="foodItemsContainer" class="items-list"></div>
+            <button type="button" id="addFoodItemBtn" class="secondary small">+ 添加食物</button>
+            <div style="margin-top: 12px;">
+                <span class="total-preview" id="newMealTotalPreview">💰 总计: ¥0.00</span>
+            </div>
+        </div>
+        <button id="submitMealBtn" style="width:100%; margin-top:10px;">📝 记录这一餐</button>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-label">🍱 总支出</div>
+            <div class="stat-amount">¥ <span id="totalAmount">0.00</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">📆 今日花费</div>
+            <div class="stat-amount">¥ <span id="todayAmount">0.00</span></div>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 12px 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+            <strong style="font-size:1rem;">🍴 三餐流水账</strong>
+            <div class="button-group">
+                <button id="exportDataBtn" class="export-btn small">📤 导出数据</button>
+                <button id="importDataBtn" class="import-btn small">📥 导入数据</button>
+                <button id="clearAllBtn" class="clear-btn small">🗑️ 清空全部</button>
+            </div>
+        </div>
+        <div id="billListContainer">
+            <div class="empty-state">⚡ 暂无账单，添加一餐美味吧</div>
+        </div>
+    </div>
+    <footer>像素风 · 记录每一口实在 · 支持数据导出备份</footer>
+</div>
+<div id="installTip" class="install-tip">📱 添加到主屏幕，像App一样使用</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-card">
+        <h3>✏️ 编辑餐食细节</h3>
+        <div class="input-group">
+            <label>日期</label>
+            <input type="date" id="editDate">
+        </div>
+        <div class="input-group">
+            <label>餐别</label>
+            <select id="editMeal">
+                <option value="breakfast">🍳 早餐</option>
+                <option value="lunch">🍱 午餐</option>
+                <option value="dinner">🍜 晚餐</option>
+            </select>
+        </div>
+        <div class="meal-items-area" style="margin-top:12px;">
+            <div style="font-weight:bold;">🥢 食物项目</div>
+            <div id="editFoodItemsContainer" class="items-list"></div>
+            <button type="button" id="editAddFoodBtn" class="secondary small">+ 添加食物</button>
+            <div style="margin-top: 10px;">
+                <span class="total-preview" id="editTotalPreview">💰 总计: ¥0.00</span>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button id="cancelEditBtn" class="secondary">取消</button>
+            <button id="saveEditBtn">保存修改</button>
+        </div>
+    </div>
+</div>
+
+<!-- 隐藏的文件导入 input -->
+<input type="file" id="importFileInput" accept=".json">
+
+<script>
+    // ---------- PWA 离线存储与数据模型 ----------
+    let records = [];
+    
+    const mealDisplay = {
+        breakfast: { icon: '🍳', name: '早餐', class: 'breakfast' },
+        lunch: { icon: '🍱', name: '午餐', class: 'lunch' },
+        dinner: { icon: '🍜', name: '晚餐', class: 'dinner' }
+    };
+    const mealOrder = { breakfast:1, lunch:2, dinner:3 };
+
+    // DOM 元素
+    const newDateInput = document.getElementById('newDate');
+    const newMealSelect = document.getElementById('newMeal');
+    const foodItemsContainer = document.getElementById('foodItemsContainer');
+    const addFoodItemBtn = document.getElementById('addFoodItemBtn');
+    const newMealTotalPreview = document.getElementById('newMealTotalPreview');
+    const submitMealBtn = document.getElementById('submitMealBtn');
+    const totalSpan = document.getElementById('totalAmount');
+    const todaySpan = document.getElementById('todayAmount');
+    const billContainer = document.getElementById('billListContainer');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const installTip = document.getElementById('installTip');
+    const exportDataBtn = document.getElementById('exportDataBtn');
+    const importDataBtn = document.getElementById('importDataBtn');
+    const importFileInput = document.getElementById('importFileInput');
+    
+    // 模态框
+    const editModal = document.getElementById('editModal');
+    const editDateInput = document.getElementById('editDate');
+    const editMealSelect = document.getElementById('editMeal');
+    const editFoodContainer = document.getElementById('editFoodItemsContainer');
+    const editAddFoodBtn = document.getElementById('editAddFoodBtn');
+    const editTotalPreview = document.getElementById('editTotalPreview');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    
+    let currentEditId = null;
+    let currentEditItems = [];
+    let currentNewItems = [];
+
+    // 辅助函数
+    function getTodayDate() {
+        const d = new Date();
+        return d.toISOString().slice(0,10);
+    }
+
+    function setDefaultDates() {
+        newDateInput.value = getTodayDate();
+    }
+
+    // 存储到 localStorage
+    function saveToLocal() {
+        localStorage.setItem('mealExpenses_pwa', JSON.stringify(records));
+    }
+
+    function loadFromLocal() {
+        const stored = localStorage.getItem('mealExpenses_pwa');
+        if (stored) {
+            records = JSON.parse(stored);
+            records = records.map(record => {
+                if (!record.items && typeof record.amount === 'number') {
+                    let defaultName = mealDisplay[record.mealType]?.name || '餐费';
+                    let items = [{ name: defaultName, price: record.amount }];
+                    return { ...record, items: items, total: record.amount };
+                }
+                if (record.total === undefined && record.items) {
+                    record.total = record.items.reduce((sum, it) => sum + (it.price || 0), 0);
+                }
+                return record;
+            });
+        } else {
+            records = generateDemoData();
+        }
+    }
+
+    function generateDemoData() {
+        const today = getTodayDate();
+        const yesterday = getRelativeDate(-1);
+        return [
+            { id: Date.now()+1, date: today, mealType: 'breakfast', items: [{name:'肉包子',price:2.5},{name:'甜豆浆',price:1.5}], total:4.0 },
+            { id: Date.now()+2, date: today, mealType: 'lunch', items: [{name:'蛋炒饭',price:12},{name:'可乐',price:3}], total:15 },
+            { id: Date.now()+3, date: yesterday, mealType: 'dinner', items: [{name:'番茄鸡蛋面',price:14},{name:'卤蛋',price:1.5}], total:15.5 },
+            { id: Date.now()+4, date: yesterday, mealType: 'breakfast', items: [{name:'烧麦',price:3},{name:'牛奶',price:2}], total:5 }
+        ];
+    }
+
+    function getRelativeDate(days) {
+        const d = new Date();
+        d.setDate(d.getDate()+days);
+        return d.toISOString().slice(0,10);
+    }
+
+    function calcTotal() {
+        return records.reduce((sum, r) => sum + (r.total || 0), 0);
+    }
+    function calcTodayTotal() {
+        const today = getTodayDate();
+        return records.filter(r => r.date === today).reduce((sum, r) => sum + (r.total || 0), 0);
+    }
+
+    function updateStats() {
+        totalSpan.innerText = calcTotal().toFixed(2);
+        todaySpan.innerText = calcTodayTotal().toFixed(2);
+    }
+
+    function formatDateDisplay(dateStr) {
+        const [y,m,d] = dateStr.split('-');
+        const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+        const w = weekdays[new Date(y,m-1,d).getDay()];
+        return `${y}年${parseInt(m)}月${parseInt(d)}日 ${w}`;
+    }
+
+    function renderBillList() {
+        if (!records.length) {
+            billContainer.innerHTML = `<div class="empty-state">🍙 还没有食物记录，点击添加吧</div>`;
+            return;
+        }
+        const groupMap = new Map();
+        records.forEach(rec => {
+            if (!groupMap.has(rec.date)) groupMap.set(rec.date, []);
+            groupMap.get(rec.date).push(rec);
+        });
+        for (let list of groupMap.values()) {
+            list.sort((a,b) => mealOrder[a.mealType] - mealOrder[b.mealType]);
+        }
+        const sortedDates = Array.from(groupMap.keys()).sort((a,b)=> new Date(b)-new Date(a));
+        let html = '';
+        for (let date of sortedDates) {
+            const meals = groupMap.get(date);
+            const dayTotal = meals.reduce((sum, m) => sum + (m.total || 0), 0);
+            const displayDate = formatDateDisplay(date);
+            html += `<div class="bill-group">
+                        <div class="group-date">
+                            <span>📅 ${displayDate}</span>
+                            <span>💰 合计 ¥${dayTotal.toFixed(2)}</span>
+                        </div>`;
+            for (let meal of meals) {
+                const mealInfo = mealDisplay[meal.mealType];
+                const total = meal.total || meal.items.reduce((s,i)=>s+i.price,0);
+                html += `
+                    <div class="meal-record" data-id="${meal.id}">
+                        <div class="meal-record-header">
+                            <span class="meal-badge">${mealInfo.icon} ${mealInfo.name}</span>
+                            <span class="meal-amount">¥ ${total.toFixed(2)}</span>
+                            <div class="meal-actions">
+                                <button class="edit-meal small secondary" data-id="${meal.id}">✏️ 编辑</button>
+                                <button class="delete-meal small danger" data-id="${meal.id}">🗑️ 删除</button>
+                            </div>
+                        </div>
+                        <div class="details-list" data-detail="${meal.id}">
+                            ${meal.items.map(item => `<div class="detail-item"><span>🥢 ${escapeHtml(item.name)}</span><span>¥ ${item.price.toFixed(2)}</span></div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            html += `</div>`;
+        }
+        billContainer.innerHTML = html;
+        
+        document.querySelectorAll('.meal-record').forEach(el => {
+            const detailsDiv = el.querySelector('.details-list');
+            const header = el.querySelector('.meal-record-header');
+            header.style.cursor = 'pointer';
+            header.addEventListener('click', (e) => {
+                if(e.target.tagName === 'BUTTON') return;
+                detailsDiv.classList.toggle('show');
+            });
+        });
+        document.querySelectorAll('.edit-meal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                openEditModal(id);
+            });
+        });
+        document.querySelectorAll('.delete-meal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                deleteRecordById(id);
+            });
+        });
+    }
+
+    function deleteRecordById(id) {
+        if(confirm('删除这顿饭的记录吗？')) {
+            records = records.filter(r => r.id !== id);
+            refreshUI();
+        }
+    }
+
+    function refreshUI() {
+        renderBillList();
+        updateStats();
+        saveToLocal();
+    }
+
+    // 食物清单渲染
+    function renderNewFoodItems() {
+        foodItemsContainer.innerHTML = '';
+        currentNewItems.forEach((item, idx) => {
+            const row = document.createElement('div');
+            row.className = 'food-item-row';
+            row.innerHTML = `
+                <input type="text" placeholder="食物名" value="${escapeHtml(item.name)}" data-nameidx="${idx}">
+                <input type="number" step="0.01" placeholder="价格" class="price-input" value="${item.price}" data-priceidx="${idx}">
+                <button class="remove-food small danger" data-idx="${idx}">✖️</button>
+            `;
+            foodItemsContainer.appendChild(row);
+        });
+        document.querySelectorAll('[data-nameidx]').forEach(inp => {
+            inp.addEventListener('change', (e) => {
+                let idx = parseInt(inp.dataset.nameidx);
+                if(!isNaN(idx)) currentNewItems[idx].name = inp.value;
+                updateNewTotalPreview();
+            });
+        });
+        document.querySelectorAll('[data-priceidx]').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                let idx = parseInt(inp.dataset.priceidx);
+                let val = parseFloat(inp.value);
+                if(!isNaN(val) && val>=0) currentNewItems[idx].price = val;
+                updateNewTotalPreview();
+            });
+        });
+        document.querySelectorAll('.remove-food').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                let idx = parseInt(btn.dataset.idx);
+                currentNewItems.splice(idx,1);
+                renderNewFoodItems();
+                updateNewTotalPreview();
+            });
+        });
+        updateNewTotalPreview();
+    }
+
+    function updateNewTotalPreview() {
+        let total = currentNewItems.reduce((sum,i)=> sum + (i.price || 0), 0);
+        newMealTotalPreview.innerText = `💰 总计: ¥${total.toFixed(2)}`;
+    }
+
+    function addNewFoodItem() {
+        currentNewItems.push({ name: '新食物', price: 0 });
+        renderNewFoodItems();
+    }
+
+    function submitNewMeal() {
+        const date = newDateInput.value;
+        if(!date) { alert('请选择日期'); return; }
+        const mealType = newMealSelect.value;
+        if(currentNewItems.length === 0) { alert('请至少添加一样食物~'); return; }
+        let validItems = currentNewItems.filter(item => item.name.trim() !== '' && !isNaN(item.price) && item.price>=0);
+        if(validItems.length === 0) { alert('食物名称和有效价格不能为空'); return; }
+        const total = validItems.reduce((s,i)=> s + i.price, 0);
+        const newRecord = {
+            id: Date.now(),
+            date: date,
+            mealType: mealType,
+            items: validItems.map(it => ({ name: it.name.trim(), price: it.price })),
+            total: total
+        };
+        records.push(newRecord);
+        currentNewItems = [];
+        renderNewFoodItems();
+        refreshUI();
+    }
+
+    // 编辑功能
+    function openEditModal(id) {
+        const record = records.find(r => r.id === id);
+        if(!record) return;
+        currentEditId = id;
+        editDateInput.value = record.date;
+        editMealSelect.value = record.mealType;
+        currentEditItems = record.items.map(it => ({ ...it }));
+        renderEditFoodItems();
+        updateEditTotalPreview();
+        editModal.style.display = 'flex';
+    }
+
+    function renderEditFoodItems() {
+        editFoodContainer.innerHTML = '';
+        currentEditItems.forEach((item, idx) => {
+            const row = document.createElement('div');
+            row.className = 'food-item-row';
+            row.innerHTML = `
+                <input type="text" placeholder="食物名" value="${escapeHtml(item.name)}" data-edit-name="${idx}">
+                <input type="number" step="0.01" placeholder="价格" class="price-input" value="${item.price}" data-edit-price="${idx}">
+                <button class="remove-edit-food small danger" data-edit-idx="${idx}">✖️</button>
+            `;
+            editFoodContainer.appendChild(row);
+        });
+        document.querySelectorAll('[data-edit-name]').forEach(inp => {
+            inp.addEventListener('change', (e) => {
+                let idx = parseInt(inp.dataset.editName);
+                currentEditItems[idx].name = inp.value;
+                updateEditTotalPreview();
+            });
+        });
+        document.querySelectorAll('[data-edit-price]').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                let idx = parseInt(inp.dataset.editPrice);
+                let val = parseFloat(inp.value);
+                if(!isNaN(val)) currentEditItems[idx].price = val;
+                updateEditTotalPreview();
+            });
+        });
+        document.querySelectorAll('.remove-edit-food').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                let idx = parseInt(btn.dataset.editIdx);
+                currentEditItems.splice(idx,1);
+                renderEditFoodItems();
+                updateEditTotalPreview();
+            });
+        });
+    }
+
+    function updateEditTotalPreview() {
+        let total = currentEditItems.reduce((s,i)=> s + (i.price||0),0);
+        editTotalPreview.innerText = `💰 总计: ¥${total.toFixed(2)}`;
+    }
+
+    function addEditFoodItem() {
+        currentEditItems.push({ name: '新食物', price: 0 });
+        renderEditFoodItems();
+        updateEditTotalPreview();
+    }
+
+    function saveEditedMeal() {
+        if(currentEditId === null) return;
+        const newDate = editDateInput.value;
+        const newMeal = editMealSelect.value;
+        if(!newDate) { alert('请选择日期'); return; }
+        let validItems = currentEditItems.filter(it => it.name.trim() !== '' && !isNaN(it.price) && it.price>=0);
+        if(validItems.length === 0) { alert('至少保留一项有效食物'); return; }
+        const newTotal = validItems.reduce((s,i)=> s + i.price, 0);
+        const idx = records.findIndex(r => r.id === currentEditId);
+        if(idx !== -1) {
+            records[idx] = {
+                ...records[idx],
+                date: newDate,
+                mealType: newMeal,
+                items: validItems,
+                total: newTotal
+            };
+            refreshUI();
+        }
+        closeEditModal();
+    }
+
+    function closeEditModal() {
+        editModal.style.display = 'none';
+        currentEditId = null;
+        currentEditItems = [];
+    }
+
+    function clearAll() {
+        if(records.length === 0) return;
+        if(confirm('⚠️ 清空所有三餐账单？')) {
+            records = [];
+            refreshUI();
+        }
+    }
+
+    // ----- 导出数据功能 -----
+    function exportData() {
+        if (records.length === 0) {
+            alert('暂无数据可导出');
+            return;
+        }
+        const dataStr = JSON.stringify(records, null, 2);
+        const blob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        a.download = `三餐账单_备份_${dateStr}.json`;
+        a.href = url;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('✅ 账单已导出！文件保存在下载文件夹');
+    }
+
+    // ----- 导入数据功能 -----
+    function importData(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (!Array.isArray(imported)) {
+                    throw new Error('数据格式错误，不是数组');
+                }
+                // 简单校验每个记录的必要字段
+                for (let rec of imported) {
+                    if (!rec.id || !rec.date || !rec.mealType || !rec.items || !Array.isArray(rec.items)) {
+                        throw new Error('数据格式不完整，缺少必要字段');
+                    }
+                    // 确保每个食物项有name和price
+                    for (let item of rec.items) {
+                        if (typeof item.name !== 'string' || typeof item.price !== 'number') {
+                            throw new Error('食物项格式错误');
+                        }
+                    }
+                }
+                if (confirm(`导入将覆盖当前所有数据，共 ${imported.length} 条记录。确认导入吗？`)) {
+                    records = imported;
+                    // 确保每条记录都有total字段（兼容旧数据）
+                    records = records.map(rec => {
+                        if (!rec.total && rec.items) {
+                            rec.total = rec.items.reduce((s,i)=> s + i.price, 0);
+                        }
+                        return rec;
+                    });
+                    refreshUI();
+                    alert(`导入成功！共 ${records.length} 条记录`);
+                }
+            } catch (err) {
+                alert('导入失败：文件格式不正确\n' + err.message);
+            }
+        };
+        reader.onerror = function() {
+            alert('读取文件失败');
+        };
+        reader.readAsText(file);
+    }
+
+    function triggerImport() {
+        importFileInput.click();
+    }
+
+    // 导出/导入事件绑定
+    exportDataBtn.addEventListener('click', exportData);
+    importDataBtn.addEventListener('click', triggerImport);
+    importFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            importData(e.target.files[0]);
+            importFileInput.value = ''; // 清空，允许重复导入同一文件
+        }
+    });
+
+    function escapeHtml(str) { 
+        if(!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // PWA 安装提示检测
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installTip.style.display = 'block';
+    });
+    installTip.addEventListener('click', () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+        } else if (navigator.standalone === false) {
+            alert('在 Safari 中点击分享按钮，选择“添加到主屏幕”');
+        }
+        installTip.style.display = 'none';
+    });
+    if (window.navigator.standalone === true) {
+        installTip.style.display = 'none';
+    }
+
+    // 初始化
+    function init() {
+        setDefaultDates();
+        loadFromLocal();
+        addFoodItemBtn.addEventListener('click', addNewFoodItem);
+        submitMealBtn.addEventListener('click', submitNewMeal);
+        clearAllBtn.addEventListener('click', clearAll);
+        editAddFoodBtn.addEventListener('click', addEditFoodItem);
+        cancelEditBtn.addEventListener('click', closeEditModal);
+        saveEditBtn.addEventListener('click', saveEditedMeal);
+        editModal.addEventListener('click', (e) => { if(e.target === editModal) closeEditModal(); });
+        if(currentNewItems.length === 0) {
+            currentNewItems.push({ name: '包子', price: 2.5 });
+            currentNewItems.push({ name: '牛奶', price: 2.0 });
+            renderNewFoodItems();
+        } else {
+            renderNewFoodItems();
+        }
+        refreshUI();
+    }
+    init();
+
+    // Service Worker 注册 (PWA 离线缓存)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(e => console.log('SW not supported fully', e));
+        if (!document.querySelector('#dynamic-sw')) {
+            const swCode = `self.addEventListener('fetch', event => { event.respondWith(fetch(event.request).catch(() => caches.match(event.request))); });`;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(()=>{});
+        }
+    }
+</script>
+</body>
+</html>
